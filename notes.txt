@@ -1,0 +1,6 @@
+for order in first_customer.order_set.all():
+	print(order)
+	if order.product.name in all_orders:
+		all_orders[order.product.name] += 1
+	else:
+		all_orders[order.product.name] = 1
