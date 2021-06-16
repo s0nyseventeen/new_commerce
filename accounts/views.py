@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect
+from django.forms import inlineformset_factory
 from .models import *
-from .forms import *
+from .forms import OrderForm
+from .filters import OrderFilter
 
 
 def home(request):
@@ -32,26 +34,35 @@ def product(request):
 def customer(request, pk):
     customer = Customer.objects.get(id=pk)
     orders = customer.order_set.all()
-    total_orders = orders.count()
+    total_orders = orders.count()    
+    my_filter_order = OrderFilter(request.GET, queryset=orders)
+    orders = my_filter_order.qs
     context = {
         'total_orders': total_orders,
         'orders': orders,
-        'customer': customer
+        'customer': customer,
+        'my_filter_order': my_filter_order
     }
     return render(request, 'accounts/customers.html', context)
 
 
 def create_order(request, pk):
+    OrderFormSet = inlineformset_factory(Customer, Order,
+                                        fields=('product', 'status'), extra=5)
     customer = Customer.objects.get(id=pk)
-    form = OrderForm()
+    formset = OrderFormSet(queryset=Order.objects.none(), instance=customer)
+    # form = OrderForm(initial={'customer': customer})
     if request.method == 'POST':
         print("!!! PRINTING REQUEST POST:", request.POST)
-        form = OrderForm(request.POST)
-        if form.is_valid():
-            form.save()
+        # form = OrderForm(request.POST)
+        formset = OrderFormSet(request.POST, instance=customer)
+        # if form.is_valid():
+            # form.save()
+        if formset.is_valid():
+            formset.save()
             return redirect('/')
     context = {
-        'form': form
+        'formset': formset
     }
     return render(request, 'accounts/order_form.html', context)
 
